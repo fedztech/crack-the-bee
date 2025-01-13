@@ -1,5 +1,9 @@
-use std::io::{self, Error};
-use std::process::exit;
+use regex::Regex;
+use std::fs::File;
+use std::io::{self, BufRead};
+use std::rc::Rc;
+
+static NUM_LETTERS: usize = 7;
 
 fn capture_and_validate_one_letter() -> Result<String, std::io::Error> {
     println!("Please input 1 ascii letter between with range 'a' to 'z'.");
@@ -33,8 +37,8 @@ fn capture_and_validate_one_letter() -> Result<String, std::io::Error> {
     return Ok(letter_read.clone());
 }
 
-fn capture_game_letters(letters: &mut [char; 7]) -> Result<usize, std::io::Error> {
-    for letter_position in 0..7 {
+fn capture_game_letters(letters: &mut [char; NUM_LETTERS]) -> Result<usize, std::io::Error> {
+    for letter_position in 0..NUM_LETTERS {
         let mut letter_captured_correctly: bool = false;
         while false == letter_captured_correctly {
             letter_captured_correctly = true;
@@ -65,15 +69,18 @@ fn capture_game_letters(letters: &mut [char; 7]) -> Result<usize, std::io::Error
                 }
                 Err(e) => {
                     letter_captured_correctly = false;
-                    println!("Failed to capture letter {}, {}. Try again.", letter_position, e);
+                    println!(
+                        "Failed to capture letter {}, {}. Try again.",
+                        letter_position, e
+                    );
                 }
             }
         }
     }
-    Ok(7)
+    Ok(NUM_LETTERS)
 }
 
-fn print_game_letters(letters: &[char; 7]) {
+fn print_game_letters(letters: &[char; NUM_LETTERS]) {
     println!("Letters captured.");
     println!("Main letter: {}", letters[0].to_string());
     for letter_index in 1..letters.len() {
@@ -81,10 +88,78 @@ fn print_game_letters(letters: &[char; 7]) {
     }
 }
 
+fn load_word_list(
+    file_path: &str,
+    letters: &[char; NUM_LETTERS],
+) -> Result<Rc<Vec<String>>, std::io::Error> {
+    let mut word_list: Vec<String> = Vec::new();
+
+    let word_file_result = File::open(file_path);
+
+    let mut regular_expression = r"^[".to_string();
+    for letter in letters {
+        regular_expression += &letter.to_string();
+    }
+    regular_expression += "]+$";
+
+    match word_file_result {
+        Ok(word_file) => {
+            let file_reader = io::BufReader::new(word_file);
+            let empty_string: String = String::new();
+            file_reader
+                .lines()
+                .filter(|line| line.as_ref().unwrap_or(&empty_string).len() >= 4)
+                .filter(|line| {
+                    line.as_ref()
+                        .unwrap_or(&empty_string)
+                        .contains(letters.as_slice()[0])
+                        == true
+                })
+                .filter(|line| line.as_ref().unwrap_or(&empty_string).contains("'") == false)
+                .filter(|line| line.as_ref().unwrap_or(&empty_string).starts_with(letters) == true)
+                .filter(|line| {
+                    let re = Regex::new(regular_expression.as_str()).unwrap();
+                    return re.is_match(line.as_ref().unwrap_or(&empty_string));
+                })
+                .for_each(|line| {
+                    word_list.push(line.expect("blah"));
+                });
+        }
+        Err(e) => {
+            let open_file_error =
+                std::io::Error::new(std::io::ErrorKind::NotFound, "Failed to open file");
+            return Err(open_file_error);
+        }
+    }
+
+    let mut ret_val: Rc<Vec<String>> = Rc::new(word_list);
+    return Ok(ret_val);
+}
+
 fn main() {
     println!("crack-the-bee");
 
-    let mut letters: [char; 7] = ['a'; 7];
-    capture_game_letters(&mut letters);
-    print_game_letters(&letters);
+    let mut letters: [char; NUM_LETTERS] = ['a'; NUM_LETTERS];
+    let capture_result = capture_game_letters(&mut letters);
+    match capture_result {
+        Ok(num_letters) => {
+            print_game_letters(&letters);
+        }
+        Err(e) => {
+            println!("Failed to capture the letters: {}", e.to_string());
+            std::process::exit(1);
+        }
+    }
+
+    let words_result = load_word_list("/usr/share/dict/american-english-insane", &letters);
+    match words_result {
+        Ok(words) => {
+            for value in words.iter() {
+                println!("{}", value);
+            }
+        }
+        Err(e) => {
+            println!("{}", e);
+        }
+    }
 }
