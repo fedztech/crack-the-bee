@@ -1,6 +1,6 @@
 use regex::Regex;
 use std::fs::File;
-use std::io::{self, BufRead};
+use std::io::{self, BufRead, BufReader};
 use std::rc::Rc;
 
 static NUM_LETTERS: usize = 7;
@@ -88,42 +88,14 @@ fn print_game_letters(letters: &[char; NUM_LETTERS]) {
     }
 }
 
-fn load_word_list(
-    file_path: &str,
-    letters: &[char; NUM_LETTERS],
-) -> Result<Rc<Vec<String>>, std::io::Error> {
-    let mut word_list: Vec<String> = Vec::new();
-
+fn get_word_reader_for_file(file_path: &str) -> Result<BufReader<File>, std::io::Error> {
     let word_file_result = File::open(file_path);
-
-    let mut regular_expression = r"^[".to_string();
-    for letter in letters {
-        regular_expression += &letter.to_string();
-    }
-    regular_expression += "]+$";
 
     match word_file_result {
         Ok(word_file) => {
             let file_reader = io::BufReader::new(word_file);
-            let empty_string: String = String::new();
-            file_reader
-                .lines()
-                .filter(|line| line.as_ref().unwrap_or(&empty_string).len() >= 4)
-                .filter(|line| {
-                    line.as_ref()
-                        .unwrap_or(&empty_string)
-                        .contains(letters.as_slice()[0])
-                        == true
-                })
-                .filter(|line| line.as_ref().unwrap_or(&empty_string).contains("'") == false)
-                .filter(|line| line.as_ref().unwrap_or(&empty_string).starts_with(letters) == true)
-                .filter(|line| {
-                    let re = Regex::new(regular_expression.as_str()).unwrap();
-                    return re.is_match(line.as_ref().unwrap_or(&empty_string));
-                })
-                .for_each(|line| {
-                    word_list.push(line.expect("blah"));
-                });
+            //let file_reader_ptr = Rc::new(file_reader);
+            return Ok(file_reader);
         }
         Err(e) => {
             let open_file_error =
@@ -131,6 +103,39 @@ fn load_word_list(
             return Err(open_file_error);
         }
     }
+}
+
+fn filter_words(
+    reader: &mut BufReader<File>,
+    letters: &[char; NUM_LETTERS],
+) -> Result<Rc<Vec<String>>, std::io::Error> {
+    let mut word_list: Vec<String> = Vec::new();
+
+    let mut regular_expression = r"^[".to_string();
+    for letter in letters {
+        regular_expression += &letter.to_string();
+    }
+    regular_expression += "]+$";
+
+    let empty_string: String = String::new();
+    reader
+        .lines()
+        .filter(|line| line.as_ref().unwrap_or(&empty_string).len() >= 4)
+        .filter(|line| {
+            line.as_ref()
+                .unwrap_or(&empty_string)
+                .contains(letters.as_slice()[0])
+                == true
+        })
+        .filter(|line| line.as_ref().unwrap_or(&empty_string).contains("'") == false)
+        .filter(|line| line.as_ref().unwrap_or(&empty_string).starts_with(letters) == true)
+        .filter(|line| {
+            let re = Regex::new(regular_expression.as_str()).unwrap();
+            return re.is_match(line.as_ref().unwrap_or(&empty_string));
+        })
+        .for_each(|line| {
+            word_list.push(line.expect("blah"));
+        });
 
     let mut ret_val: Rc<Vec<String>> = Rc::new(word_list);
     return Ok(ret_val);
@@ -139,6 +144,7 @@ fn load_word_list(
 fn main() {
     println!("crack-the-bee");
 
+    // Capture letters
     let mut letters: [char; NUM_LETTERS] = ['a'; NUM_LETTERS];
     let capture_result = capture_game_letters(&mut letters);
     match capture_result {
@@ -151,15 +157,31 @@ fn main() {
         }
     }
 
-    let words_result = load_word_list("/usr/share/dict/american-english-insane", &letters);
+    // Get word reader
+    let mut word_reader_result = get_word_reader_for_file("/usr/share/dict/american-english-huge");
+    match &mut word_reader_result {
+        Ok(_) => {
+            // Ok, we will proceed below to avoid too much nesting of pattern matchings.
+        },
+        Err(e) => {
+            println!("Failed to capture the letters: {}", e.to_string());
+            std::process::exit(2);
+        }
+    }
+
+    // Filter words
+    let word_reader = word_reader_result.as_mut().unwrap();
+    let mut words_result = filter_words(word_reader, &letters);
     match words_result {
-        Ok(words) => {
+        Ok(ref mut words) => {
             for value in words.iter() {
                 println!("{}", value);
             }
         }
         Err(e) => {
             println!("{}", e);
+            std::process::exit(3);
         }
     }
+    std::process::exit(0);
 }
