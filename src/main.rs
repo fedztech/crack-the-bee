@@ -3,84 +3,11 @@ use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 use std::rc::Rc;
 
-static NUM_LETTERS: usize = 7;
+mod args;
 
-fn capture_and_validate_one_letter() -> Result<String, std::io::Error> {
-    println!("Please input 1 ascii letter between with range 'a' to 'z'.");
-    let mut letter_read = String::new();
+use args::crack_the_bee::CrackTheBeeArgs;
 
-    let res_read_op = io::stdin().read_line(&mut letter_read);
-    match res_read_op {
-        Ok(num_bytes_read) => {
-            if letter_read.trim().len() != 1 {
-                let invalid_size_error = std::io::Error::new(
-                    std::io::ErrorKind::InvalidInput,
-                    "The input shall be only 1 character from a to z.",
-                );
-                return Err(invalid_size_error);
-            }
-            if letter_read.to_ascii_lowercase().as_bytes()[0] < "a".as_bytes()[0]
-                || letter_read.to_ascii_lowercase().as_bytes()[0] > "z".as_bytes()[0]
-            {
-                let invalid_range_error = std::io::Error::new(
-                    std::io::ErrorKind::InvalidInput,
-                    "The input shall be only contain characters from a to z.",
-                );
-                return Err(invalid_range_error);
-            }
-        }
-        Err(e) => {
-            return Err(e);
-        }
-    }
-
-    return Ok(letter_read.clone());
-}
-
-fn capture_game_letters(letters: &mut [char; NUM_LETTERS]) -> Result<usize, std::io::Error> {
-    for letter_position in 0..NUM_LETTERS {
-        let mut letter_captured_correctly: bool = false;
-        while false == letter_captured_correctly {
-            letter_captured_correctly = true;
-            let capture_result = capture_and_validate_one_letter();
-            match capture_result {
-                Ok(letter) => {
-                    let the_letter: char = letter
-                        .trim()
-                        .to_string()
-                        .pop()
-                        .expect("Already validated.")
-                        .to_ascii_lowercase();
-                    //Check that the letter is not already inserted.
-                    if letter_position > 0 {
-                        for duplicate_check_position in 0..letter_position - 1 {
-                            if letters[duplicate_check_position] == the_letter {
-                                println!(
-                                    "Input letter {} is a duplicate of position {}. Try again.",
-                                    the_letter, duplicate_check_position
-                                );
-                                letter_captured_correctly = false;
-                            }
-                        }
-                    }
-                    if letter_captured_correctly == true {
-                        letters[letter_position] = the_letter;
-                    }
-                }
-                Err(e) => {
-                    letter_captured_correctly = false;
-                    println!(
-                        "Failed to capture letter {}, {}. Try again.",
-                        letter_position, e
-                    );
-                }
-            }
-        }
-    }
-    Ok(NUM_LETTERS)
-}
-
-fn print_game_letters(letters: &[char; NUM_LETTERS]) {
+fn print_game_letters(letters: &[char; args::crack_the_bee::NUM_LETTERS]) {
     println!("Letters captured.");
     println!("Main letter: {}", letters[0].to_string());
     for letter_index in 1..letters.len() {
@@ -107,7 +34,7 @@ fn get_word_reader_for_file(file_path: &str) -> Result<BufReader<File>, std::io:
 
 fn filter_words(
     reader: &mut BufReader<File>,
-    letters: &[char; NUM_LETTERS],
+    letters: &[char; args::crack_the_bee::NUM_LETTERS],
 ) -> Result<Rc<Vec<String>>, std::io::Error> {
     let mut word_list: Vec<String> = Vec::new();
 
@@ -144,25 +71,40 @@ fn filter_words(
 fn main() {
     println!("crack-the-bee");
 
-    // Capture letters
-    let mut letters: [char; NUM_LETTERS] = ['a'; NUM_LETTERS];
-    let capture_result = capture_game_letters(&mut letters);
-    match capture_result {
-        Ok(num_letters) => {
-            print_game_letters(&letters);
-        }
-        Err(e) => {
-            println!("Failed to capture the letters: {}", e.to_string());
+    let crack_the_bee_args: args::crack_the_bee::CrackTheBeeArgs = argh::from_env();
+    match crack_the_bee_args.validate() {
+        Some(error) => {
+            println!("{}", error.to_string());
+            println!("Use --help to get a description of the usage.");
             std::process::exit(1);
         }
+        None => {
+            // All good.
+        }
     }
+
+    let mut letters: [char; args::crack_the_bee::NUM_LETTERS] =
+        ['a'; args::crack_the_bee::NUM_LETTERS];
+    for letter_ix in 0..letters.len() {
+        let char_conversion =
+            char::from_u32(crack_the_bee_args.letters.as_bytes()[letter_ix].clone() as u32);
+        match char_conversion {
+            Some(converted_letter) => {
+                letters[letter_ix] = converted_letter;
+            }
+            None => {
+                // Something went wrong.
+            }
+        }
+    }
+    print_game_letters(&letters);
 
     // Get word reader
     let mut word_reader_result = get_word_reader_for_file("/usr/share/dict/american-english-huge");
     match &mut word_reader_result {
         Ok(_) => {
             // Ok, we will proceed below to avoid too much nesting of pattern matchings.
-        },
+        }
         Err(e) => {
             println!("Failed to capture the letters: {}", e.to_string());
             std::process::exit(2);
