@@ -1,6 +1,7 @@
 use regex::Regex;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader};
+use std::path;
 use std::rc::Rc;
 
 mod args;
@@ -100,30 +101,44 @@ fn main() {
     print_game_letters(&letters);
 
     // Get word reader
-    let mut word_reader_result = get_word_reader_for_file("/usr/share/dict/american-english-huge");
-    match &mut word_reader_result {
-        Ok(_) => {
-            // Ok, we will proceed below to avoid too much nesting of pattern matchings.
+    let mut word_reader: Option<BufReader<File>> = None;
+
+    let mut word_file_reader_result: Result<BufReader<File>, io::Error>;
+    match crack_the_bee_args.file_path {
+        Some(path) => {
+            word_file_reader_result = get_word_reader_for_file(path.as_str());
+            word_reader = match word_file_reader_result {
+                Ok(reader) => {
+                    // Ok, we will proceed below to avoid too much nesting of pattern matchings.
+                    Some(reader)
+                }
+                Err(e) => {
+                    println!("Failed to capture the letters: {}", e.to_string());
+                    std::process::exit(2);
+                }
+            }
         }
-        Err(e) => {
-            println!("Failed to capture the letters: {}", e.to_string());
-            std::process::exit(2);
+        None => {
+            // The user wants to use something other than a file1
         }
     }
 
     // Filter words
-    let word_reader = word_reader_result.as_mut().unwrap();
-    let mut words_result = filter_words(word_reader, &letters);
-    match words_result {
-        Ok(ref mut words) => {
-            for value in words.iter() {
-                println!("{}", value);
+    //let word_reader = word_reader_result.as_mut().unwrap();
+    if word_reader.is_some() {
+        let mut words_result = filter_words(&mut word_reader.unwrap(), &letters);
+        match words_result {
+            Ok(ref mut words) => {
+                for value in words.iter() {
+                    println!("{}", value);
+                }
+            }
+            Err(e) => {
+                println!("{}", e);
+                std::process::exit(3);
             }
         }
-        Err(e) => {
-            println!("{}", e);
-            std::process::exit(3);
-        }
     }
+
     std::process::exit(0);
 }
