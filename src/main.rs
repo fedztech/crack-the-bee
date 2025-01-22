@@ -1,12 +1,12 @@
+use reader::file_word_reader::FileWordReader;
 use regex::Regex;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader};
-use std::path;
 use std::rc::Rc;
 
 mod args;
+mod reader;
 
-use args::crack_the_bee::CrackTheBeeArgs;
 
 fn print_game_letters(letters: &[char; args::crack_the_bee::NUM_LETTERS]) {
     println!("Letters captured.");
@@ -16,27 +16,34 @@ fn print_game_letters(letters: &[char; args::crack_the_bee::NUM_LETTERS]) {
     }
 }
 
-fn get_word_reader_for_file(file_path: &str) -> Result<BufReader<File>, std::io::Error> {
-    let word_file_result = File::open(file_path);
-
-    match word_file_result {
-        Ok(word_file) => {
-            let file_reader = io::BufReader::new(word_file);
-            //let file_reader_ptr = Rc::new(file_reader);
-            return Ok(file_reader);
-        }
-        Err(e) => {
-            let open_file_error =
-                std::io::Error::new(std::io::ErrorKind::NotFound, "Failed to open file");
-            return Err(open_file_error);
-        }
-    }
+//fn get_word_reader_for_file(file_path: &str) -> Result<BufReader<File>, std::io::Error> {
+//    let word_file_result = File::open(file_path);
+//
+//    match word_file_result {
+//        Ok(word_file) => {
+//            let file_reader: BufReader<File> = io::BufReader::new(word_file);
+//            //let file_reader_ptr = Rc::new(file_reader);
+//            return Ok(file_reader);
+//        }
+//        Err(e) => {
+//            let open_file_error =
+//                std::io::Error::new(std::io::ErrorKind::NotFound, "Failed to open file");
+//            return Err(open_file_error);
+//        }
+//    }
+//}
+fn get_word_reader_for_file(file_path: &str) -> Result<FileWordReader, std::io::Error> {
+    let reader_result = reader::file_word_reader::FileWordReader::new(file_path);
+    reader_result
 }
 
-fn filter_words(
-    reader: &mut BufReader<File>,
+
+fn filter_words<T>(
+    reader: &mut T,
     letters: &[char; args::crack_the_bee::NUM_LETTERS],
-) -> Result<Rc<Vec<String>>, std::io::Error> {
+) -> Result<Rc<Vec<String>>, std::io::Error> 
+where T :  BufRead
+{
     let mut word_list: Vec<String> = Vec::new();
 
     let mut regular_expression = r"^[".to_string();
@@ -101,9 +108,9 @@ fn main() {
     print_game_letters(&letters);
 
     // Get word reader
-    let mut word_reader: Option<BufReader<File>> = None;
+    let mut word_reader: Option<FileWordReader> = None;
 
-    let mut word_file_reader_result: Result<BufReader<File>, io::Error>;
+    let mut word_file_reader_result: Result<FileWordReader, io::Error>;
     match crack_the_bee_args.file_path {
         Some(path) => {
             word_file_reader_result = get_word_reader_for_file(path.as_str());
@@ -124,9 +131,8 @@ fn main() {
     }
 
     // Filter words
-    //let word_reader = word_reader_result.as_mut().unwrap();
     if word_reader.is_some() {
-        let mut words_result = filter_words(&mut word_reader.unwrap(), &letters);
+        let mut words_result = filter_words(&mut word_reader.unwrap().reader, &letters);
         match words_result {
             Ok(ref mut words) => {
                 for value in words.iter() {

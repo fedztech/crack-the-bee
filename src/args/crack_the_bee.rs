@@ -1,6 +1,5 @@
 use argh::FromArgs;
 use std::fmt::Write;
-use std::path::Path;
 
 pub static NUM_LETTERS: usize = 7;
 
