@@ -1,10 +1,10 @@
+use args::crack_the_bee::CrackTheBeeArgs;
 use regex::Regex;
 use std::io::{self, BufRead};
 use std::rc::Rc;
 
 mod args;
 mod reader;
-
 
 fn print_game_letters(letters: &[char; args::crack_the_bee::NUM_LETTERS]) {
     println!("Letters captured.");
@@ -17,8 +17,9 @@ fn print_game_letters(letters: &[char; args::crack_the_bee::NUM_LETTERS]) {
 fn filter_words<T>(
     reader: &mut T,
     letters: &[char; args::crack_the_bee::NUM_LETTERS],
-) -> Result<Rc<Vec<String>>, std::io::Error> 
-where T :  BufRead
+) -> Result<Rc<Vec<String>>, std::io::Error>
+where
+    T: BufRead,
 {
     let mut word_list: Vec<String> = Vec::new();
 
@@ -52,6 +53,52 @@ where T :  BufRead
     return Ok(ret_val);
 }
 
+fn set_game_letter_array(
+    letter_string: &String,
+    letter_array: &mut [char; args::crack_the_bee::NUM_LETTERS],
+) {
+    for letter_ix in 0..letter_array.len() {
+        let char_conversion = char::from_u32(letter_string.as_bytes()[letter_ix].clone() as u32);
+        match char_conversion {
+            Some(converted_letter) => {
+                letter_array[letter_ix] = converted_letter;
+            }
+            None => {
+                // Something went wrong.
+            }
+        }
+    }
+}
+
+fn get_word_dictionary_reader(
+    crack_the_bee_args: &CrackTheBeeArgs,
+) -> Option<Box<dyn std::io::BufRead>> {
+    let word_file_reader_result: Result<Box<dyn std::io::BufRead>, io::Error>;
+    match &crack_the_bee_args.file_path {
+        Some(path) => {
+            word_file_reader_result =
+                reader::file_word_reader::create_file_word_reader(path.as_str());
+            match word_file_reader_result {
+                Ok(reader) => {
+                    // Ok, we will proceed below to avoid too much nesting of pattern matchings.
+                    return Some(reader);
+                }
+                Err(e) => {
+                    println!("Failed to capture the letters: {}", e.to_string());
+                    std::process::exit(2);
+                }
+            }
+        }
+        None => {
+            // The user wants to use something other than a file1
+        }
+    }
+
+    // Other readers to be generated here.
+
+    None
+}
+
 fn main() {
     println!("crack-the-bee");
 
@@ -69,57 +116,31 @@ fn main() {
 
     let mut letters: [char; args::crack_the_bee::NUM_LETTERS] =
         ['a'; args::crack_the_bee::NUM_LETTERS];
-    for letter_ix in 0..letters.len() {
-        let char_conversion =
-            char::from_u32(crack_the_bee_args.letters.as_bytes()[letter_ix].clone() as u32);
-        match char_conversion {
-            Some(converted_letter) => {
-                letters[letter_ix] = converted_letter;
-            }
-            None => {
-                // Something went wrong.
-            }
-        }
-    }
+    set_game_letter_array(&crack_the_bee_args.letters, &mut letters);
     print_game_letters(&letters);
 
     // Get word reader
-    let mut word_reader: Option<Box<dyn std::io::BufRead>> = None;
-
-    let mut word_file_reader_result: Result<Box<dyn std::io::BufRead>, io::Error>;
-    match crack_the_bee_args.file_path {
-        Some(path) => {
-            word_file_reader_result = reader::file_word_reader::create_file_word_reader(path.as_str());
-            word_reader = match word_file_reader_result {
-                Ok(reader) => {
-                    // Ok, we will proceed below to avoid too much nesting of pattern matchings.
-                    Some(reader)
+    let word_reader_result: Option<Box<dyn std::io::BufRead>> =
+        get_word_dictionary_reader(&crack_the_bee_args);
+    match word_reader_result {
+        Some(mut word_reader) => {
+            let mut words_result = filter_words(&mut word_reader, &letters);
+            match words_result {
+                Ok(ref mut words) => {
+                    for value in words.iter() {
+                        println!("{}", value);
+                    }
                 }
                 Err(e) => {
-                    println!("Failed to capture the letters: {}", e.to_string());
-                    std::process::exit(2);
+                    println!("{}", e);
+                    std::process::exit(3);
                 }
             }
         }
         None => {
-            // The user wants to use something other than a file1
-        }
-    }
-
-    // Filter words
-    if word_reader.is_some() {
-        let mut words_result = filter_words(&mut word_reader.unwrap(), &letters);
-        match words_result {
-            Ok(ref mut words) => {
-                for value in words.iter() {
-                    println!("{}", value);
-                }
-            }
-            Err(e) => {
-                println!("{}", e);
-                std::process::exit(3);
-            }
-        }
+            println!("Failed to create a word reader.");
+            println!("Use --help to get a description of the usage.");
+            std::process::exit(2);}
     }
 
     std::process::exit(0);
