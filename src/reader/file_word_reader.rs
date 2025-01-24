@@ -1,3 +1,5 @@
+use std::fmt::Write;
+
 
 pub fn create_file_word_reader(
     file_path: &str,
@@ -10,6 +12,13 @@ pub fn create_file_word_reader(
             return Ok(Box::new(reader));
         }
         Err(e) => {
+            let mut error = "Error. ".to_string();
+            write!(
+                &mut error,
+                "{}",
+                e
+            )
+            .unwrap_or(());
             let open_file_error =
                 std::io::Error::new(std::io::ErrorKind::NotFound, "Failed to open file");
             return Err(open_file_error);

@@ -26,7 +26,7 @@ pub struct CrackTheBeeArgs {
 
 impl CrackTheBeeArgs {
     pub fn validate(&self) -> Option<std::io::Error> {
-        let mut file_path_available = false;
+        let file_path_available: bool;
         let mut url_available = false;
         match self.file_path.clone() {
             Some(file_path) => {
@@ -87,7 +87,7 @@ impl CrackTheBeeArgs {
             }
             if count > 1 {
                 let mut error = "Error. ".to_string();
-                let mut the_char = '?';
+                let the_char: char;
                 let letter_char_conversion = char::from_u32(*letter_to_check as u32);
                 match letter_char_conversion {
                     Some(character) => {
@@ -108,7 +108,7 @@ impl CrackTheBeeArgs {
             // Check that it is only letters
             if *letter_to_check < "a".as_bytes()[0] || *letter_to_check > "z".as_bytes()[0] {
                 let mut error = "Error. ".to_string();
-                let mut the_char = '?';
+                let the_char: char;
                 let letter_char_conversion = char::from_u32(*letter_to_check as u32);
                 match letter_char_conversion {
                     Some(character) => {

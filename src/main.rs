@@ -49,8 +49,7 @@ where
             word_list.push(line.expect("blah"));
         });
 
-    let mut ret_val: Rc<Vec<String>> = Rc::new(word_list);
-    return Ok(ret_val);
+    return Ok(Rc::new(word_list));
 }
 
 fn set_game_letter_array(
