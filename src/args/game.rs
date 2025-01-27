@@ -5,7 +5,7 @@ pub static NUM_LETTERS: usize = 7;
 
 #[derive(FromArgs)]
 /// Create the data set for a spelling bee game.
-pub struct CrackTheBeeArgs {
+pub struct GameArgs {
     #[argh(option)]
     #[argh(
         description = "if given, the source of the word list is a valid and readable file in the file system. For example /usr/share/dict/american-english-huge."
@@ -29,7 +29,7 @@ pub struct CrackTheBeeArgs {
     
 }
 
-impl CrackTheBeeArgs {
+impl GameArgs {
     pub fn validate(&self) -> Option<std::io::Error> {
         let file_path_available: bool;
         let mut url_available = false;

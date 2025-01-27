@@ -1,4 +1,4 @@
-use args::crack_the_bee::CrackTheBeeArgs;
+use args::game::GameArgs;
 use regex::Regex;
 use std::io::{self, BufRead};
 use std::rc::Rc;
@@ -8,10 +8,10 @@ mod games;
 mod reader;
 
 fn get_word_dictionary_reader(
-    crack_the_bee_args: &CrackTheBeeArgs,
+    game_args: &GameArgs,
 ) -> Option<Box<dyn std::io::BufRead>> {
     let word_file_reader_result: Result<Box<dyn std::io::BufRead>, io::Error>;
-    match &crack_the_bee_args.file_path {
+    match &game_args.file_path {
         Some(path) => {
             word_file_reader_result =
                 reader::file_word_reader::create_file_word_reader(path.as_str());
@@ -37,10 +37,10 @@ fn get_word_dictionary_reader(
 }
 
 fn main() {
-    println!("crack-the-bee");
+    println!("crack-the-games");
 
-    let crack_the_bee_args: args::crack_the_bee::CrackTheBeeArgs = argh::from_env();
-    match crack_the_bee_args.validate() {
+    let game_args: args::game::GameArgs = argh::from_env();
+    match game_args.validate() {
         Some(error) => {
             println!("{}", error.to_string());
             println!("Use --help to get a description of the usage.");
@@ -53,12 +53,12 @@ fn main() {
 
     // Get word reader
     let word_reader_result: Option<Box<dyn std::io::BufRead>> =
-        get_word_dictionary_reader(&crack_the_bee_args);
+        get_word_dictionary_reader(&game_args);
     match word_reader_result {
         Some(mut word_reader) => {
-            if crack_the_bee_args.spellingbee {
+            if game_args.spellingbee {
                 let words_result =
-                    games::bee::get_spelling_bee_suggestions(crack_the_bee_args, &mut word_reader);
+                    games::bee::get_spelling_bee_suggestions(game_args, &mut word_reader);
                 match words_result {
                     Ok(words) => {
                         for value in words.iter() {
@@ -70,7 +70,7 @@ fn main() {
                         std::process::exit(3);
                     }
                 }
-            } else if crack_the_bee_args.wordle {
+            } else if game_args.wordle {
                 // TBD
             }
         }

@@ -1,1 +1,1 @@
-pub mod crack_the_bee;
+pub mod game;

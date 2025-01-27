@@ -1,9 +1,9 @@
 use crate::args;
 use regex::Regex;
-use std::io::{self, BufRead};
+use std::io::BufRead;
 use std::rc::Rc;
 
-fn print_game_letters(letters: &[char; args::crack_the_bee::NUM_LETTERS]) {
+fn print_game_letters(letters: &[char; args::game::NUM_LETTERS]) {
     println!("Letters captured.");
     println!("Main letter: {}", letters[0].to_string());
     for letter_index in 1..letters.len() {
@@ -13,7 +13,7 @@ fn print_game_letters(letters: &[char; args::crack_the_bee::NUM_LETTERS]) {
 
 fn set_game_letter_array(
     letter_string: &String,
-    letter_array: &mut [char; args::crack_the_bee::NUM_LETTERS],
+    letter_array: &mut [char; args::game::NUM_LETTERS],
 ) {
     for letter_ix in 0..letter_array.len() {
         let char_conversion = char::from_u32(letter_string.as_bytes()[letter_ix].clone() as u32);
@@ -30,7 +30,7 @@ fn set_game_letter_array(
 
 fn filter_words<T>(
     reader: &mut T,
-    letters: &[char; args::crack_the_bee::NUM_LETTERS],
+    letters: &[char; args::game::NUM_LETTERS],
 ) -> Result<Rc<Vec<String>>, std::io::Error>
 where
     T: BufRead,
@@ -67,12 +67,12 @@ where
 }
 
 pub fn get_spelling_bee_suggestions(
-    crack_the_bee_args: args::crack_the_bee::CrackTheBeeArgs,
+    game_args: args::game::GameArgs,
     word_reader: &mut Box<dyn std::io::BufRead>,
 ) -> Result<Rc<Vec<String>>, std::io::Error> {
-    let mut letters: [char; args::crack_the_bee::NUM_LETTERS] =
-        ['a'; args::crack_the_bee::NUM_LETTERS];
-    set_game_letter_array(&crack_the_bee_args.letters, &mut letters);
+    let mut letters: [char; args::game::NUM_LETTERS] =
+        ['a'; args::game::NUM_LETTERS];
+    set_game_letter_array(&game_args.letters, &mut letters);
     print_game_letters(&letters);
 
     filter_words(word_reader, &letters)
