@@ -71,7 +71,7 @@ fn main() {
                     }
                 }
             } else if game_args.wordle {
-                // TBD
+                games::word::get_wordle_suggestions(game_args, &mut word_reader);
             }
         }
         None => {
