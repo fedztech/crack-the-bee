@@ -22,12 +22,33 @@ pub struct CrackTheBeeArgs {
         description = "the letters to use, the first letter shall be in all generated words. 7 unique letters shall be given in total "
     )]
     pub letters: String,
+    #[argh(switch, short = 's', description = "to solve the spelling bee game")]
+    pub spellingbee: bool,
+    #[argh(switch, short = 'w', description = "to solve the wordle game")]
+    pub wordle: bool,
+    
 }
 
 impl CrackTheBeeArgs {
     pub fn validate(&self) -> Option<std::io::Error> {
         let file_path_available: bool;
         let mut url_available = false;
+
+        if self.spellingbee == true && self.wordle == true {
+            return Some(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "Either spellingbee (-s) or wordle (-w) need to be selected, not both.",
+            ));
+        }
+
+        if self.spellingbee == false && self.wordle == false {
+            return Some(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "Please select a game to play, spellingbee (-s) or wordle (-w).",
+            ));
+        }
+
+
         match self.file_path.clone() {
             Some(file_path) => {
                 println!("Provided path: {}", file_path);

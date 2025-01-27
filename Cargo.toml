@@ -12,3 +12,6 @@ path = "src/args"
 
 [[include]]
 path = "src/reader"
+
+[[include]]
+path = "src/games"
