@@ -4,9 +4,8 @@ use std::io::{self, BufRead};
 use std::rc::Rc;
 
 mod args;
-mod reader;
 mod games;
-
+mod reader;
 
 fn get_word_dictionary_reader(
     crack_the_bee_args: &CrackTheBeeArgs,
@@ -58,17 +57,28 @@ fn main() {
     match word_reader_result {
         Some(mut word_reader) => {
             if crack_the_bee_args.spellingbee {
-                games::bee::get_spelling_bee_suggestions(crack_the_bee_args, &mut word_reader);
-            }
-            else if crack_the_bee_args.wordle {
+                let words_result =
+                    games::bee::get_spelling_bee_suggestions(crack_the_bee_args, &mut word_reader);
+                match words_result {
+                    Ok(words) => {
+                        for value in words.iter() {
+                            println!("{}", value);
+                        }
+                    },
+                    Err(e) => {
+                        println!("{}", e);
+                        std::process::exit(3);
+                    }
+                }
+            } else if crack_the_bee_args.wordle {
                 // TBD
             }
-            
         }
         None => {
             println!("Failed to create a word reader.");
             println!("Use --help to get a description of the usage.");
-            std::process::exit(2);}
+            std::process::exit(2);
+        }
     }
 
     std::process::exit(0);
