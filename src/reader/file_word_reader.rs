@@ -1,4 +1,6 @@
-use std::fmt::Write;
+#![warn(missing_docs)]
+
+use std::{fmt::Write, io::Seek};
 
 // Todo: Create a function that returns a vector of File BufRead objects
 // If a file has X lines, and Y readers are requested
@@ -6,6 +8,11 @@ use std::fmt::Write;
 // This can be used to parellize the processing of big files.
 
 
+/// Given a valid file path, returns a BufRead trait object to read it.
+/// # Arguments
+/// * `file_path` : Valid path to a file containing a word in every line.
+/// # Returns
+/// Result with the BufRead trait object or Error
 pub fn create_file_word_reader(
     file_path: &str,
 ) -> Result<Box<dyn std::io::BufRead>, std::io::Error> {

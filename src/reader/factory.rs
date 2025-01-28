@@ -1,3 +1,4 @@
+#![warn(missing_docs)]
 use crate::reader;
 use crate::args::game::GameArgs;
 use std::io;

@@ -1,6 +1,7 @@
 use argh::FromArgs;
 use std::fmt::Write;
 
+/// Maximum number of letters that the spelling bee game uses.
 pub static NUM_LETTERS: usize = 7;
 
 #[derive(FromArgs)]
