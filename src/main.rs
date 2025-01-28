@@ -1,4 +1,4 @@
-use args::game::GameArgs;
+use args::game::{self, GameArgs};
 use regex::Regex;
 use std::io::{self, BufRead};
 use std::rc::Rc;
@@ -7,34 +7,7 @@ mod args;
 mod games;
 mod reader;
 
-fn get_word_dictionary_reader(
-    game_args: &GameArgs,
-) -> Option<Box<dyn std::io::BufRead>> {
-    let word_file_reader_result: Result<Box<dyn std::io::BufRead>, io::Error>;
-    match &game_args.file_path {
-        Some(path) => {
-            word_file_reader_result =
-                reader::file_word_reader::create_file_word_reader(path.as_str());
-            match word_file_reader_result {
-                Ok(reader) => {
-                    // Ok, we will proceed below to avoid too much nesting of pattern matchings.
-                    return Some(reader);
-                }
-                Err(e) => {
-                    println!("Failed to capture the letters: {}", e.to_string());
-                    std::process::exit(2);
-                }
-            }
-        }
-        None => {
-            // The user wants to use something other than a file1
-        }
-    }
 
-    // Other readers to be generated here.
-
-    None
-}
 
 fn main() {
     println!("crack-the-games");
@@ -51,12 +24,12 @@ fn main() {
         }
     }
 
-    // Get word reader
-    let word_reader_result: Option<Box<dyn std::io::BufRead>> =
-        get_word_dictionary_reader(&game_args);
-    match word_reader_result {
-        Some(mut word_reader) => {
-            if game_args.spellingbee {
+    if game_args.spellingbee {
+        // Get word reader
+        let word_reader_result: Option<Box<dyn std::io::BufRead>> =
+            reader::factory::get_word_dictionary_reader(&game_args);
+        match word_reader_result {
+            Some(mut word_reader) => {
                 let words_result =
                     games::bee::get_spelling_bee_suggestions(game_args, &mut word_reader);
                 match words_result {
@@ -64,21 +37,22 @@ fn main() {
                         for value in words.iter() {
                             println!("{}", value);
                         }
-                    },
+                    }
                     Err(e) => {
                         println!("{}", e);
                         std::process::exit(3);
                     }
                 }
-            } else if game_args.wordle {
-                games::word::get_wordle_suggestions(game_args, &mut word_reader);
+            }
+            None => {
+                println!("Failed to create a word reader.");
+                println!("Use --help to get a description of the usage.");
+                std::process::exit(2);
             }
         }
-        None => {
-            println!("Failed to create a word reader.");
-            println!("Use --help to get a description of the usage.");
-            std::process::exit(2);
-        }
+    } else if game_args.wordle {
+        games::word::get_wordle_suggestions(game_args);
+    } else {
     }
 
     std::process::exit(0);
