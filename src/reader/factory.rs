@@ -2,7 +2,17 @@ use crate::reader;
 use crate::args::game::GameArgs;
 use std::io;
 
-
+/// Given the arguments, returns a BufRead to read the words.
+/// 
+/// If the GameArgs::file_path is given, then the BufRead will read from a file.
+///
+/// # Arguments
+///
+/// * `game_args`: The game arguments used to deduct the source of the word dictionary.
+///
+/// # Returns
+///
+/// An optional with either `Box<dyn std::io::BufRead>` or `None`
 pub fn get_word_dictionary_reader(game_args: &GameArgs) -> Option<Box<dyn std::io::BufRead>> {
     let word_file_reader_result: Result<Box<dyn std::io::BufRead>, io::Error>;
     match &game_args.file_path {

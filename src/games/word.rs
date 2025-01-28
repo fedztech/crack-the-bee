@@ -2,34 +2,9 @@ use crate::args;
 use regex::Regex;
 use std::io::BufRead;
 use std::rc::Rc;
+use crate::games::word_state::WordState;
 
-struct LetterPosition {
-    position: usize,
-    found_letter: bool,
-    letter_to_use: String,
-    letters_not_to_use: String,
-}
 
-struct WordState {
-    letter_positions: [LetterPosition; 5],
-    present_letters: String,
-    not_present_letters: String,
-}
-
-impl WordState {
-    fn new() -> Self {
-        WordState {
-            letter_positions: core::array::from_fn(|index| LetterPosition {
-                position: index + 1,
-                found_letter: false,
-                letter_to_use: "".to_string(),
-                letters_not_to_use: "".to_string(),
-            }),
-            present_letters: "".to_string(),
-            not_present_letters: "".to_string(),
-        }
-    }
-}
 
 fn filter_words<T>(reader: &mut T, state: &mut WordState) -> Result<Rc<Vec<String>>, std::io::Error>
 where

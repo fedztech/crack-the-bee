@@ -1,13 +1,10 @@
-use args::game::{self, GameArgs};
-use regex::Regex;
-use std::io::{self, BufRead};
-use std::rc::Rc;
+#![warn(missing_docs)]
+
+//! This program provides helpful tools to crate and solve NY Times Games.
 
 mod args;
 mod games;
 mod reader;
-
-
 
 fn main() {
     println!("crack-the-games");

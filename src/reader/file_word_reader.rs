@@ -1,10 +1,16 @@
 use std::fmt::Write;
 
+// Todo: Create a function that returns a vector of File BufRead objects
+// If a file has X lines, and Y readers are requested
+// Each reader shall return a reader which is able to return X/Y lines
+// This can be used to parellize the processing of big files.
+
 
 pub fn create_file_word_reader(
     file_path: &str,
 ) -> Result<Box<dyn std::io::BufRead>, std::io::Error> {
     let word_file_result = std::fs::File::open(file_path);
+
 
     match word_file_result {
         Ok(word_file) => {
