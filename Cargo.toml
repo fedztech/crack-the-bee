@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
     regex = "1.11.1"
     argh = "0.1.13"
+    reqwest = {version = "0.12.12",default-features = true, features = ["blocking"]}
 
 [[include]]
 path = "src/args"

@@ -33,6 +33,16 @@ pub fn get_word_dictionary_reader(game_args: &GameArgs) -> Option<Box<dyn std::i
         }
         None => {
             // The user wants to use something other than a file1
+            match &game_args.url {
+                Some(url) => {
+                    let reader = reader::net_word_reader::create_net_word_reader(url);
+                    return Some(reader.unwrap());
+                },
+                None=>{
+                    // Then we cannot do anything.
+                    return None;
+                }
+            }
         }
     }
 
