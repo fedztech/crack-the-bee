@@ -1,165 +1,56 @@
-use regex::Regex;
-use std::fs::File;
-use std::io::{self, BufRead};
-use std::rc::Rc;
+#![warn(missing_docs)]
 
-static NUM_LETTERS: usize = 7;
+//! This program provides helpful tools to crate and solve NY Times Games.
 
-fn capture_and_validate_one_letter() -> Result<String, std::io::Error> {
-    println!("Please input 1 ascii letter between with range 'a' to 'z'.");
-    let mut letter_read = String::new();
-
-    let res_read_op = io::stdin().read_line(&mut letter_read);
-    match res_read_op {
-        Ok(num_bytes_read) => {
-            if letter_read.trim().len() != 1 {
-                let invalid_size_error = std::io::Error::new(
-                    std::io::ErrorKind::InvalidInput,
-                    "The input shall be only 1 character from a to z.",
-                );
-                return Err(invalid_size_error);
-            }
-            if letter_read.to_ascii_lowercase().as_bytes()[0] < "a".as_bytes()[0]
-                || letter_read.to_ascii_lowercase().as_bytes()[0] > "z".as_bytes()[0]
-            {
-                let invalid_range_error = std::io::Error::new(
-                    std::io::ErrorKind::InvalidInput,
-                    "The input shall be only contain characters from a to z.",
-                );
-                return Err(invalid_range_error);
-            }
-        }
-        Err(e) => {
-            return Err(e);
-        }
-    }
-
-    return Ok(letter_read.clone());
-}
-
-fn capture_game_letters(letters: &mut [char; NUM_LETTERS]) -> Result<usize, std::io::Error> {
-    for letter_position in 0..NUM_LETTERS {
-        let mut letter_captured_correctly: bool = false;
-        while false == letter_captured_correctly {
-            letter_captured_correctly = true;
-            let capture_result = capture_and_validate_one_letter();
-            match capture_result {
-                Ok(letter) => {
-                    let the_letter: char = letter
-                        .trim()
-                        .to_string()
-                        .pop()
-                        .expect("Already validated.")
-                        .to_ascii_lowercase();
-                    //Check that the letter is not already inserted.
-                    if letter_position > 0 {
-                        for duplicate_check_position in 0..letter_position - 1 {
-                            if letters[duplicate_check_position] == the_letter {
-                                println!(
-                                    "Input letter {} is a duplicate of position {}. Try again.",
-                                    the_letter, duplicate_check_position
-                                );
-                                letter_captured_correctly = false;
-                            }
-                        }
-                    }
-                    if letter_captured_correctly == true {
-                        letters[letter_position] = the_letter;
-                    }
-                }
-                Err(e) => {
-                    letter_captured_correctly = false;
-                    println!(
-                        "Failed to capture letter {}, {}. Try again.",
-                        letter_position, e
-                    );
-                }
-            }
-        }
-    }
-    Ok(NUM_LETTERS)
-}
-
-fn print_game_letters(letters: &[char; NUM_LETTERS]) {
-    println!("Letters captured.");
-    println!("Main letter: {}", letters[0].to_string());
-    for letter_index in 1..letters.len() {
-        println!("Letter {} = {}", letter_index, letters[letter_index]);
-    }
-}
-
-fn load_word_list(
-    file_path: &str,
-    letters: &[char; NUM_LETTERS],
-) -> Result<Rc<Vec<String>>, std::io::Error> {
-    let mut word_list: Vec<String> = Vec::new();
-
-    let word_file_result = File::open(file_path);
-
-    let mut regular_expression = r"^[".to_string();
-    for letter in letters {
-        regular_expression += &letter.to_string();
-    }
-    regular_expression += "]+$";
-
-    match word_file_result {
-        Ok(word_file) => {
-            let file_reader = io::BufReader::new(word_file);
-            let empty_string: String = String::new();
-            file_reader
-                .lines()
-                .filter(|line| line.as_ref().unwrap_or(&empty_string).len() >= 4)
-                .filter(|line| {
-                    line.as_ref()
-                        .unwrap_or(&empty_string)
-                        .contains(letters.as_slice()[0])
-                        == true
-                })
-                .filter(|line| line.as_ref().unwrap_or(&empty_string).contains("'") == false)
-                .filter(|line| line.as_ref().unwrap_or(&empty_string).starts_with(letters) == true)
-                .filter(|line| {
-                    let re = Regex::new(regular_expression.as_str()).unwrap();
-                    return re.is_match(line.as_ref().unwrap_or(&empty_string));
-                })
-                .for_each(|line| {
-                    word_list.push(line.expect("blah"));
-                });
-        }
-        Err(e) => {
-            let open_file_error =
-                std::io::Error::new(std::io::ErrorKind::NotFound, "Failed to open file");
-            return Err(open_file_error);
-        }
-    }
-
-    let mut ret_val: Rc<Vec<String>> = Rc::new(word_list);
-    return Ok(ret_val);
-}
+mod args;
+mod games;
+mod reader;
 
 fn main() {
-    println!("crack-the-bee");
+    println!("crack-the-games");
 
-    let mut letters: [char; NUM_LETTERS] = ['a'; NUM_LETTERS];
-    let capture_result = capture_game_letters(&mut letters);
-    match capture_result {
-        Ok(num_letters) => {
-            print_game_letters(&letters);
-        }
-        Err(e) => {
-            println!("Failed to capture the letters: {}", e.to_string());
+    let game_args: args::game::GameArgs = argh::from_env();
+    match game_args.validate() {
+        Some(error) => {
+            println!("{}", error.to_string());
+            println!("Use --help to get a description of the usage.");
             std::process::exit(1);
         }
+        None => {
+            // All good.
+        }
     }
 
-    let words_result = load_word_list("/usr/share/dict/american-english-insane", &letters);
-    match words_result {
-        Ok(words) => {
-            for value in words.iter() {
-                println!("{}", value);
+    if game_args.spellingbee {
+        // Get word reader
+        let word_reader_result: Option<Box<dyn std::io::BufRead>> =
+            reader::factory::get_word_dictionary_reader(&game_args);
+        match word_reader_result {
+            Some(mut word_reader) => {
+                let words_result =
+                    games::bee::get_spelling_bee_suggestions(game_args, &mut word_reader);
+                match words_result {
+                    Ok(words) => {
+                        for value in words.iter() {
+                            println!("{}", value);
+                        }
+                    }
+                    Err(e) => {
+                        println!("{}", e);
+                        std::process::exit(3);
+                    }
+                }
+            }
+            None => {
+                println!("Failed to create a word reader.");
+                println!("Use --help to get a description of the usage.");
+                std::process::exit(2);
             }
         }
-        Err(e) => {
-            println!("{}", e);
-        }
+    } else if game_args.wordle {
+        games::word::get_wordle_suggestions(game_args);
+    } else {
     }
+
+    std::process::exit(0);
 }
