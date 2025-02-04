@@ -5,7 +5,6 @@ use std::rc::Rc;
 use crate::games::word_state::WordState;
 
 
-
 fn filter_words<T>(reader: &mut T, state: &mut WordState) -> Result<Rc<Vec<String>>, std::io::Error>
 where
     T: BufRead,
@@ -112,7 +111,7 @@ where
     return Ok(Rc::new(word_list));
 }
 
-pub fn get_wordle_suggestions(game_args: args::game::GameArgs) {
+pub fn get_wordle_suggestions(game_args: args::game::WordSubcommandArgs) {
     let mut word_state = WordState::new();
 
     for _ in 1..6 {
