@@ -1,5 +1,5 @@
 [package]
-name = "crack-the-bee"
+name = "crack"
 authors = ["fedztech"]
 license = "MIT"
 repository = "https://github.com/fedztech/crack-the-bee/"

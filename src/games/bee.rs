@@ -44,6 +44,7 @@ where
     regular_expression += "]+$";
 
     let empty_string: String = String::new();
+    
     reader
         .lines()
         .filter(|line| line.as_ref().unwrap_or(&empty_string).len() >= 4)
@@ -67,7 +68,7 @@ where
 }
 
 pub fn get_spelling_bee_suggestions(
-    game_args: args::game::GameArgs,
+    game_args: args::game::BeeSubcommandArgs,
     word_reader: &mut Box<dyn std::io::BufRead>,
 ) -> Result<Rc<Vec<String>>, std::io::Error> {
     let mut letters: [char; args::game::NUM_LETTERS] =

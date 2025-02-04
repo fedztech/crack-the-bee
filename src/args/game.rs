@@ -4,9 +4,32 @@ use std::fmt::Write;
 /// Maximum number of letters that the spelling bee game uses.
 pub static NUM_LETTERS: usize = 7;
 
-#[derive(FromArgs)]
-/// Create the data set for a spelling bee game.
-pub struct GameArgs {
+#[derive(FromArgs, PartialEq, Debug)]
+/// Crack entry command
+pub struct CrackArgs {
+    #[argh(subcommand)]
+    pub game: GameSubcommands,
+}
+
+#[derive(FromArgs, PartialEq, Debug)]
+#[argh(subcommand)]
+pub enum GameSubcommands {
+    Bee(BeeSubcommandArgs),
+    Word(WordSubcommandArgs),
+}
+
+pub trait PossiblePaths {
+    fn url(&self) -> Option<String>;
+    fn file_path(&self) -> Option<String>;
+}
+
+#[derive(FromArgs, PartialEq, Debug)]
+#[argh(
+    subcommand,
+    name = "bee",
+    description = "Generates possible word list for the Bee game."
+)]
+pub struct BeeSubcommandArgs {
     #[argh(option)]
     #[argh(
         description = "if given, the source of the word list is a valid and readable file in the file system. For example /usr/share/dict/american-english-huge."
@@ -23,68 +46,99 @@ pub struct GameArgs {
         description = "the letters to use, the first letter shall be in all generated words. 7 unique letters shall be given in total "
     )]
     pub letters: String,
-    #[argh(switch, short = 's', description = "to solve the spelling bee game")]
-    pub spellingbee: bool,
-    #[argh(switch, short = 'w', description = "to solve the wordle game")]
-    pub wordle: bool,
-    
 }
 
-impl GameArgs {
-    pub fn validate(&self) -> Option<std::io::Error> {
-        let file_path_available: bool;
-        let mut url_available = false;
+impl PossiblePaths for BeeSubcommandArgs {
+    fn url(&self) -> Option<String> {
+        self.url.clone()
+    }
 
-        if self.spellingbee == true && self.wordle == true {
-            return Some(std::io::Error::new(
-                std::io::ErrorKind::InvalidInput,
-                "Either spellingbee (-s) or wordle (-w) need to be selected, not both.",
-            ));
+    fn file_path(&self) -> Option<String> {
+        self.file_path.clone()
+    }
+}
+
+#[derive(FromArgs, PartialEq, Debug)]
+#[argh(
+    subcommand,
+    name = "word",
+    description = "Helps to solve the word game."
+)]
+pub struct WordSubcommandArgs {
+    #[argh(option)]
+    #[argh(
+        description = "if given, the source of the word list is a valid and readable file in the file system. For example /usr/share/dict/american-english-huge."
+    )]
+    pub file_path: Option<String>,
+
+    #[argh(option)]
+    #[argh(
+        description = "if given, the source of the word list is a web address url to a publically available file that can be downloaded"
+    )]
+    pub url: Option<String>,
+}
+
+impl PossiblePaths for WordSubcommandArgs {
+    fn url(&self) -> Option<String> {
+        self.url.clone()
+    }
+
+    fn file_path(&self) -> Option<String> {
+        self.file_path.clone()
+    }
+}
+
+fn validate_paths<T>(args_to_validate: &T) -> Option<std::io::Error>
+where
+    T: PossiblePaths,
+{
+    let file_path_available: bool;
+    let mut url_available = false;
+
+    match args_to_validate.file_path() {
+        Some(file_path) => {
+            println!("Provided path: {}", file_path);
+            let path = std::path::Path::new(&file_path);
+            if !path.exists() {
+                return Some(std::io::Error::new(
+                    std::io::ErrorKind::InvalidInput,
+                    "File does not exist.",
+                ));
+            }
+            file_path_available = true;
         }
-
-        if self.spellingbee == false && self.wordle == false {
-            return Some(std::io::Error::new(
-                std::io::ErrorKind::InvalidInput,
-                "Please select a game to play, spellingbee (-s) or wordle (-w).",
-            ));
+        None => {
+            file_path_available = false;
         }
+    }
 
-
-        match self.file_path.clone() {
-            Some(file_path) => {
-                println!("Provided path: {}", file_path);
-                let path = std::path::Path::new(&file_path);
-                if !path.exists() {
-                    return Some(std::io::Error::new(
-                        std::io::ErrorKind::InvalidInput,
-                        "File does not exist.",
-                    ));
-                }
-                file_path_available = true;
+    // File path has priority, so we do not check url if file path is available and valid
+    if !file_path_available {
+        match args_to_validate.url() {
+            Some(url) => {
+                println!("Provided url: {}", url);
+                url_available = true;
             }
             None => {
-                file_path_available = false;
+                url_available = false;
             }
         }
+    }
 
-        // File path has priority, so we do not check url if file path is available and valid
-        if !file_path_available {
-            match self.url.clone() {
-                Some(url) => {
-                    println!("Provided url: {}", url);
-                    url_available = true;
-                }
-                None => {
-                    url_available = false;
-                }
-            }
-        }
+    if !file_path_available && !url_available {
+        return Some(std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            "Either a file path or an url have to be provided. None were provided.",
+        ));
+    }
 
-        if !file_path_available && !url_available {
-            return Some(std::io::Error::new(
-                std::io::ErrorKind::InvalidInput,
-                "Either a file path or an url have to be provided. None were provided.",
-            ));
+    return None;
+}
+
+impl BeeSubcommandArgs {
+    pub fn validate(&self) -> Option<std::io::Error> {
+        if let Some(error) = validate_paths(self) {
+            return Some(error);
         }
 
         if self.letters.len() != NUM_LETTERS {
@@ -151,5 +205,11 @@ impl GameArgs {
         }
 
         return None;
+    }
+}
+
+impl WordSubcommandArgs {
+    pub fn validate(&self) -> Option<std::io::Error> {
+        return validate_paths(self);
     }
 }
