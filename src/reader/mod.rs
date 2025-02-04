@@ -3,3 +3,4 @@
 
 pub mod file_word_reader;
 pub mod factory;
+pub mod net_word_reader;

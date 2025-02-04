@@ -1,11 +1,16 @@
 [package]
 name = "crack-the-bee"
+authors = ["fedztech"]
+license = "MIT"
+repository = "https://github.com/fedztech/crack-the-bee/"
+rust-version = "1.80.0"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
     regex = "1.11.1"
     argh = "0.1.13"
+    reqwest = {version = "0.12.12",default-features = true, features = ["blocking"]}
 
 [[include]]
 path = "src/args"
