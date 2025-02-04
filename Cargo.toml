@@ -1,5 +1,9 @@
 [package]
 name = "crack-the-bee"
+authors = ["fedztech"]
+license = "MIT"
+repository = "https://github.com/fedztech/crack-the-bee/"
+rust-version = "1.80.0"
 version = "0.1.0"
 edition = "2021"
 
