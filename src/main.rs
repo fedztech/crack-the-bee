@@ -6,13 +6,15 @@ mod args;
 mod games;
 mod reader;
 
+
 fn main() {
-    println!("crack-the-games");
+    print!("crack");
 
     let crack_args: args::game::CrackArgs = argh::from_env();
 
     match crack_args.game {
         args::game::GameSubcommands::Bee(args) => {
+            println!(" bee");
             if let Some(error) = args.validate() {
                 println!("Invalid parameters for Bee game.");
                 println!("{}", error.to_string());
@@ -49,6 +51,7 @@ fn main() {
             }
         }
         args::game::GameSubcommands::Word(args) => {
+            println!(" word");
             if let Some(error) = args.validate() {
                 println!("Invalid parameters for Word game.");
                 println!("{}", error.to_string());
