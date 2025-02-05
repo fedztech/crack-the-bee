@@ -1,6 +1,6 @@
 #![warn(missing_docs)]
 
-use std::{fmt::Write, io::Seek};
+use std::fmt::Write;
 
 // Todo: Create a function that returns a vector of File BufRead objects
 // If a file has X lines, and Y readers are requested

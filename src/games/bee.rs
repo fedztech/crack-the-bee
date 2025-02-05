@@ -43,6 +43,20 @@ mod tests {
             assert_eq!(error.kind(), std::io::ErrorKind::InvalidInput);
         }
     }
+
+    #[test]
+    fn test_set_game_letters_unsupported_char() {
+        // Given
+        let letters_to_set: String = "abcdef-".to_string();
+        let mut letter_array: [char; args::game::NUM_LETTERS] = ['a'; 7];
+        // When
+        let result = set_game_letter_array(&letters_to_set, &mut letter_array);
+        // Then
+        assert_eq!(result.is_some(), true);
+        if let Some(error) = result {
+            assert_eq!(error.kind(), std::io::ErrorKind::InvalidData);
+        }
+    }
 }
 
 fn print_game_letters(letters: &[char; args::game::NUM_LETTERS]) {
@@ -57,12 +71,23 @@ fn set_game_letter_array(
     letter_string: &String,
     letter_array: &mut [char; args::game::NUM_LETTERS],
 ) -> Option<std::io::Error> {
-
     if letter_string.len() != args::game::NUM_LETTERS {
-        return Some(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Invalid length of letter_string."));
+        return Some(std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            "Invalid length of letter_string.",
+        ));
     }
 
     for letter_ix in 0..letter_array.len() {
+        // Only ASCII lowercase a-z letters are allowed
+        let the_utf8_char = letter_string.as_bytes()[letter_ix];
+        if the_utf8_char < 97 || the_utf8_char > 122 {
+            return Some(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                "Input letters are not supported.",
+            ));
+        }
+
         let char_conversion = char::from_u32(letter_string.as_bytes()[letter_ix].clone() as u32);
         match char_conversion {
             Some(converted_letter) => {

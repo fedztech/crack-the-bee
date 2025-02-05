@@ -1,9 +1,8 @@
 use crate::args;
+use crate::games::word_state::WordState;
 use regex::Regex;
 use std::io::BufRead;
 use std::rc::Rc;
-use crate::games::word_state::WordState;
-
 
 fn filter_words<T>(reader: &mut T, state: &mut WordState) -> Result<Rc<Vec<String>>, std::io::Error>
 where
@@ -17,18 +16,15 @@ where
 
     println!("Try the word 'adieu'");
 
-    let mut not_present_letters = String::new();
-    let mut present_letters = String::new();
-
     word_list.clear();
 
     println!("Enter the letters not in the word.");
-    not_present_letters.clear();
+    state.not_present_letters.clear();
     std::io::stdin()
-        .read_line(&mut not_present_letters)
+        .read_line(&mut state.not_present_letters)
         .expect("Failed to read letters no in the word.");
     for letter_position in &mut state.letter_positions {
-        letter_position.letters_not_to_use += &not_present_letters.trim();
+        letter_position.letters_not_to_use += &state.not_present_letters.trim();
     }
 
     println!("Enter the letters that are in the word (comma separated), but we do not know the position, or leave empty.");
@@ -38,8 +34,8 @@ where
         .expect("Failed to read letters no in the word.");
     if available_letters.trim().len() > 0 {
         for letter in available_letters.trim().split(",") {
-            present_letters += &"|".to_string();
-            present_letters += letter;
+            state.present_letters += &"|".to_string();
+            state.present_letters += letter;
         }
     }
 
@@ -78,7 +74,7 @@ where
             regular_expression += "([^";
             regular_expression += &letter_position.letters_not_to_use;
             regular_expression += "]";
-            regular_expression += &present_letters;
+            regular_expression += &state.present_letters;
             regular_expression += "{1})"
         }
     }
@@ -123,19 +119,12 @@ pub fn get_wordle_suggestions(game_args: args::game::WordSubcommandArgs) {
                 // Print all the words with exactly 5 letters
 
                 let res = filter_words(&mut word_reader, &mut word_state);
-                match res {
-                    Ok(words) => {
-                        //for value in words.iter() {
-                        //    println!("{}", value);
-                        //}
-                    }
-                    Err(e) => {
-                        // Todo: propagate
-                        println!("{}", e);
-                        std::process::exit(3);
-                    }
+                if let Err(e) = res {
+                    // Todo: propagate
+                    println!("{}", e);
+                    std::process::exit(3);
                 }
-            },
+            }
             None => {
                 // Todo: propagate
                 std::process::exit(4);

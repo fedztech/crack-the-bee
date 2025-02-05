@@ -1,10 +1,10 @@
 #![warn(missing_docs)]
-use crate::reader;
 use crate::args::game::PossiblePaths;
+use crate::reader;
 use std::io;
 
 /// Given the arguments, returns a BufRead to read the words.
-/// 
+///
 /// If the GameArgs::file_path is given, then the BufRead will read from a file.
 ///
 /// # Arguments
@@ -15,7 +15,8 @@ use std::io;
 ///
 /// An optional with either `Box<dyn std::io::BufRead>` or `None`
 pub fn get_word_dictionary_reader<T>(game_args: &T) -> Option<Box<dyn std::io::BufRead>>
-where T : PossiblePaths
+where
+    T: PossiblePaths,
 {
     let word_file_reader_result: Result<Box<dyn std::io::BufRead>, io::Error>;
     match &game_args.file_path() {
@@ -35,15 +36,9 @@ where T : PossiblePaths
         }
         None => {
             // The user wants to use something other than a file1
-            match &game_args.url() {
-                Some(url) => {
-                    let reader = reader::net_word_reader::create_net_word_reader(url);
-                    return Some(reader.unwrap());
-                },
-                None=>{
-                    // Then we cannot do anything.
-                    return None;
-                }
+            if let Some(url) = &game_args.url() {
+                let reader = reader::net_word_reader::create_net_word_reader(url);
+                return Some(reader.unwrap());
             }
         }
     }

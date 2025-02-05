@@ -1,5 +1,6 @@
+//! Structs to store the state of the word game
 
-
+// Stores metadata for a given letter position
 pub struct LetterPosition {
     pub position: usize,
     pub found_letter: bool,
@@ -7,6 +8,7 @@ pub struct LetterPosition {
     pub letters_not_to_use: String,
 }
 
+// Stores the state of the word game
 pub struct WordState {
     pub letter_positions: [LetterPosition; 5],
     pub present_letters: String,
