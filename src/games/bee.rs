@@ -16,7 +16,7 @@ mod tests {
     fn test_set_game_letters_ok() {
         // Given
         let letters_to_set: String = "abcdefg".to_string();
-        let mut letter_array: [char; args::game::NUM_LETTERS] = ['a'; 7];
+        let mut letter_array: [char; args::game::NUM_LETTERS] = [' '; 7];
         // When
         let result = set_game_letter_array(&letters_to_set, &mut letter_array);
         // Then
@@ -34,7 +34,7 @@ mod tests {
     fn test_set_game_letters_smaller_string() {
         // Given
         let letters_to_set: String = "abcdef".to_string();
-        let mut letter_array: [char; args::game::NUM_LETTERS] = ['a'; 7];
+        let mut letter_array: [char; args::game::NUM_LETTERS] = [' '; 7];
         // When
         let result = set_game_letter_array(&letters_to_set, &mut letter_array);
         // Then
@@ -48,7 +48,7 @@ mod tests {
     fn test_set_game_letters_unsupported_char() {
         // Given
         let letters_to_set: String = "abcdef-".to_string();
-        let mut letter_array: [char; args::game::NUM_LETTERS] = ['a'; 7];
+        let mut letter_array: [char; args::game::NUM_LETTERS] = [' '; 7];
         // When
         let result = set_game_letter_array(&letters_to_set, &mut letter_array);
         // Then
@@ -67,10 +67,16 @@ fn print_game_letters(letters: &[char; args::game::NUM_LETTERS]) {
     }
 }
 
+// Given a String with 7 lowercase letters (a-z), sets the letter arraz
+// * Return
+//   An error is returned if the operation was not successful.
+//   InvalidInput error returned if the lenght of the String is not ok
+//   InvalidData error returned if the string contains invalid characters
 fn set_game_letter_array(
     letter_string: &String,
     letter_array: &mut [char; args::game::NUM_LETTERS],
 ) -> Option<std::io::Error> {
+
     if letter_string.len() != args::game::NUM_LETTERS {
         return Some(std::io::Error::new(
             std::io::ErrorKind::InvalidInput,
@@ -88,14 +94,9 @@ fn set_game_letter_array(
             ));
         }
 
-        let char_conversion = char::from_u32(letter_string.as_bytes()[letter_ix].clone() as u32);
-        match char_conversion {
-            Some(converted_letter) => {
-                letter_array[letter_ix] = converted_letter;
-            }
-            None => {
-                // Something went wrong.
-            }
+        // Conversion should always be ok as we checked the range before.
+        if let Some(converted_letter) = char::from_u32(the_utf8_char as u32) {
+            letter_array[letter_ix] = converted_letter;
         }
     }
 
